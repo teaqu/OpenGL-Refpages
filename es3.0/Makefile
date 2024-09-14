@@ -36,3 +36,29 @@ XML = $(filter-out $(XIFILES),$(wildcard *.xml))
 
 validate:
 	jing -c $(DB5XIRNC) $(XML)
+
+FO_STYLESHEET = /usr/share/xml/docbook/stylesheet/docbook-xsl/fo/docbook.xsl
+
+# Target to generate individual PDFs and then merge them
+pdf: OpenGL_ES_Reference_Pages.pdf
+
+# Rule to generate .fo files from .xml files
+%.fo: %.xml
+	xsltproc --nonet --xinclude -o $@ $(FO_STYLESHEET) $<
+
+# Rule to generate .pdf files from .fo files
+%.pdf: %.fo
+	fop $< $@
+
+# Rule to generate all individual PDFs
+individual_pdfs: $(XML:.xml=.pdf)
+
+# Rule to merge PDFs into one
+OpenGL_ES_Reference_Pages.pdf: individual_pdfs
+	@echo "Merging PDFs into OpenGL_ES_Reference_Pages.pdf"
+	# Ensure pdfunite is installed or replace with an available tool
+	pdfunite $(sort $(XML:.xml=.pdf)) $@
+
+# Clean up generated files
+clean:
+	find . -type f \( -name '*.fo' -o -name '*.pdf' ! -name 'OpenGL_ES_Reference_Pages.pdf' \) -delete
